@@ -19,17 +19,20 @@ class Motors:
         self.motors[port] = mindstorms.Motor(port)
     
     def handle_set_pwm(self, pwm_msg):
-        self.motors[pwm_msg["port"]].start(pwm_msg["pwm"])
+        for cmd in pwm_msg["commands"]:
+            self.motors[cmd["port"]].start(cmd["pwm"])
 
+    def handle_goto_position(self, position_msg):
+        self.motors[position_msg["port"]].run_to_position(position_msg["position"])
 
 def top_level():
     hub_runtime.init(0)
     handler_map = dict()
     motors = Motors()
     
-    handler_map["motor/register"] = motors.handle_register_motor
-    handler_map["motor/set_pwm"]  = motors.handle_set_pwm
-
+    handler_map["motor/register"]       = motors.handle_register_motor
+    handler_map["motor/set_pwm"]        = motors.handle_set_pwm
+    handler_map["motor/goto_position"]  = motors.handle_goto_position
     mshub   = mindstorms.MSHub()
     
     start_ts=time.time_ns()
@@ -43,7 +46,7 @@ def top_level():
 
         gyro_data["pitch"]   = mshub.motion_sensor.get_pitch_angle()
         gyro_data["yaw"]     = mshub.motion_sensor.get_yaw_angle()
-        #gyro_data["encoder"] = motor_a.get_position()
+        gyro_data["encoder"] = 131
         gyro_data["timestamp"] =(time.time_ns()-start_ts)/1000000
         sensor_msg = {}
         sensor_msg["topic"] = "sensor"
